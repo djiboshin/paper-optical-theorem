@@ -28,7 +28,7 @@ The main workflows are organized as Jupyter notebooks:
 
 # COMSOL Models
 To ensure all steps are reproducible, COMSOL models are provided as Python scripts so users can generate their own models.
-The scripts are based on the[MPh](https://github.com/MPh-py/MPh) package and require prior experience working with it.
+The scripts are based on the [MPh](https://github.com/MPh-py/MPh) package and require prior experience working with it.
 This repository includes two models:
 - `sphere_scattering`
 - `helmholtz_scattering`
@@ -63,4 +63,40 @@ uv sync --extra comsol
 ```
 
 After synchronization, you can use the created virtual environment as usual.
+This process also installs the local editable packages `comsol`, `mie_utils`, and `processing` located in the `src` folder.
+These packages can then be imported in your code, for example:
+```
+import comsol
+import mie_utils
+import processing
+```
 
+
+# Testing
+
+To verify that your installation is working correctly or to run all tests, use:
+```
+uv run pytest
+```
+This command will execute the test suite.
+
+
+# Contributing
+
+To install all development-related dependencies, use:
+```
+uv sync --extra dev
+```
+or, if you also want to include COMSOL-related packages:
+```
+uv sync --extra dev --extra comsol
+```
+
+The repo uses `black` for formatting.
+`flake8` is recommended for code linting.
+Before committing, format all files, run tests, and clear Jupyter notebook metadata:
+```
+uv run black .
+uv run pytest --cov src --cov-report html
+uv run jupyter nbconvert --ClearMetadataPreprocessor.enabled=True --to notebook --inplace **/*.ipynb
+```

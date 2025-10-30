@@ -8,7 +8,6 @@ dependencies = [
     "numpy>=2.3.4",
     "pandas>=2.3.3",
     "pytest>=8.4.2",
-    "pytest-cov>=7.0.0",
     "scipy>=1.16.2",
     "torch>=2.9.0",
     "tqdm>=4.67.1",
@@ -17,6 +16,11 @@ dependencies = [
 [project.optional-dependencies]
 comsol = [
     "mph>=1.2.4",
+]
+dev = [
+    "black[jupyter]>=25.9.0",
+    "nbconvert>=7.16.6",
+    "pytest-cov>=7.0.0",
 ]
 
 [build-system]
