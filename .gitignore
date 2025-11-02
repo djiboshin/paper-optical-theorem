@@ -22,3 +22,6 @@ htmlcov
 
 # Apple things
 .DS_Store
+
+# Paper related files
+paper/
