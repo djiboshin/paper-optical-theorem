@@ -25,3 +25,6 @@ htmlcov
 
 # Paper related files
 paper/
+
+# Jupyter
+.ipynb_checkpoints/
