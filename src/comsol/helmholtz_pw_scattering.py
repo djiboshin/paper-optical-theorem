@@ -6,25 +6,25 @@ from datetime import datetime
 
 @dataclass(frozen=True)
 class ModelParameters:
-    L_PML = str("0.3[m]")
-    R_PML = str("1[m]")
-    a = str("1[m]")
-    c_host = str("343.2[m/s]")
-    rho_host = str("1.2044[kg/m^3]")
-    p0 = str("1[Pa]")
-    R_int = str("0.8[m]")
-    mesh_h = str("0.01[m]")
-    d_up_p = str("1.9[mm]")
-    r_p = str("5.8[mm]/2")
-    R_p = str("23.9[mm]/2")
-    E_sphere = str("3000[MPa]")
-    nu_sphere = str("0.33")
-    H_p = str("15.1[mm]")
-    d_down_p = str("2.1[mm]")
-    d_wall_p = str("2.1[mm]")
-    freq_start = str("1900 [Hz]")
-    freq_step = str("5 [Hz]")
-    freq_stop = str("2000 [Hz]")
+    L_PML: str = "0.3[m]"
+    R_PML: str = "1[m]"
+    a: str = "1[m]"
+    c_host: str = "343.2[m/s]"
+    rho_host: str = "1.2044[kg/m^3]"
+    p0: str = "1[Pa]"
+    R_int: str = "0.8[m]"
+    mesh_h: str = "0.01[m]"
+    d_up_p: str = "1.9[mm]"
+    r_p: str = "5.8[mm]/2"
+    R_p: str = "23.9[mm]/2"
+    E_sphere: str = "3000[MPa]"
+    nu_sphere: str = "0.33"
+    H_p: str = "15.1[mm]"
+    d_down_p: str = "2.1[mm]"
+    d_wall_p: str = "2.1[mm]"
+    freq_start: str = "1900 [Hz]"
+    freq_step: str = "5 [Hz]"
+    freq_stop: str = "2000 [Hz]"
 
 
 def _prepare_model(model, parameters: ModelParameters):
