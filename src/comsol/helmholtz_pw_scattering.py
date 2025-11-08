@@ -8,7 +8,6 @@ from datetime import datetime
 class ModelParameters:
     L_PML: str = "0.3[m]"
     R_PML: str = "1[m]"
-    a: str = "1[m]"
     c_host: str = "343.2[m/s]"
     rho_host: str = "1.2044[kg/m^3]"
     p0: str = "1[Pa]"
@@ -17,8 +16,6 @@ class ModelParameters:
     d_up_p: str = "1.9[mm]"
     r_p: str = "5.8[mm]/2"
     R_p: str = "23.9[mm]/2"
-    E_sphere: str = "3000[MPa]"
-    nu_sphere: str = "0.33"
     H_p: str = "15.1[mm]"
     d_down_p: str = "2.1[mm]"
     d_wall_p: str = "2.1[mm]"
@@ -34,7 +31,6 @@ def _prepare_model(model, parameters: ModelParameters):
 
     params.set("L_PML", parameters.L_PML)
     params.set("R_PML", parameters.R_PML)
-    params.set("a", parameters.a)
     params.set("c_host", parameters.c_host)
     params.set("rho_host", parameters.rho_host)
     params.set("p0", parameters.p0)
@@ -43,8 +39,6 @@ def _prepare_model(model, parameters: ModelParameters):
     params.set("d_up_p", parameters.d_up_p)
     params.set("r_p", parameters.r_p)
     params.set("R_p", parameters.R_p)
-    params.set("E_sphere", parameters.E_sphere)
-    params.set("nu_sphere", parameters.nu_sphere)
     params.set("H_p", parameters.H_p)
     params.set("d_down_p", parameters.d_down_p)
     params.set("d_wall_p", parameters.d_wall_p)
@@ -151,15 +145,15 @@ def _prepare_model(model, parameters: ModelParameters):
     pml1 = comp1.coordSystem().create("pml1", "PML")
     pml1.selection().named(sel_PML.tag())
 
-    # Создание материала среды (host)
+    # create host material
     mat_host = comp1.material().create("mat_host", "Common")
     mat_host.selection().named("sel_host")
 
     prop = mat_host.propertyGroup("def")
 
-    # ---- Функции свойств ----
+    # ---- Functions for air material properties ----
 
-    # динамическая вязкость η(T)
+    # dynamic viscosity η(T)
     eta = prop.func().create("eta", "Piecewise")
     eta.set("arg", "T")
     eta.set(
@@ -176,7 +170,7 @@ def _prepare_model(model, parameters: ModelParameters):
     eta.set("argunit", "K")
     eta.set("fununit", "Pa*s")
 
-    # теплоёмкость Cp(T)
+    # heat capacity Cp(T)
     Cp = prop.func().create("Cp", "Piecewise")
     Cp.set("arg", "T")
     Cp.set(
@@ -193,7 +187,7 @@ def _prepare_model(model, parameters: ModelParameters):
     Cp.set("argunit", "K")
     Cp.set("fununit", "J/(kg*K)")
 
-    # теплопроводность k(T)
+    # thermal conductivity k(T)
     k = prop.func().create("k", "Piecewise")
     k.set("arg", "T")
     k.set(
@@ -210,14 +204,14 @@ def _prepare_model(model, parameters: ModelParameters):
     k.set("argunit", "K")
     k.set("fununit", "W/(m*K)")
 
-    # объёмная вязкость μB(T) = 0.6 η(T)
+    # bulk viscosity μB(T) = 0.6 η(T)
     muB = prop.func().create("muB", "Analytic")
     muB.set("expr", "0.6*eta(T)")
     muB.set("args", "T")
     muB.set("argunit", "K")
     muB.set("fununit", "Pa*s")
 
-    # ---- Назначение параметров материала ----
+    # ---- Apply functions for air material properties ----
     prop.set("density", "rho_host")
     prop.set("soundspeed", "c_host")
     prop.set("heatcapacity", "Cp(T)")
