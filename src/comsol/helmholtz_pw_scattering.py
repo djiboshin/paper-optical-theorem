@@ -92,6 +92,11 @@ def _prepare_model(model, parameters: ModelParameters):
         ],
     )
 
+    # create point for probe
+    pt1 = geom1.create("pt1", "Point")
+    pt1.label("Probe")
+    pt1.set("p", ["0", "R_PML-0.01"])
+    
     # build the geometry
     geom1.run()
     geom1.run("fin")
@@ -146,6 +151,14 @@ def _prepare_model(model, parameters: ModelParameters):
     sel_host_sample = comp1.selection().create("sel_host_sample", "Complement")
     sel_host_sample.label("Host near Sample")
     sel_host_sample.set("input", ["sample_domain", "sel_host_with_PML"])
+
+    # Selection: point probe
+    sel_probe = comp1.selection().create("sel_probe", "Disk")
+    sel_probe.set("entitydim", jpype.types.JInt(0))
+    sel_probe.label("Probe")
+    sel_probe.set("r", "0.005")
+    sel_probe.set("posy", "R_PML-0.01")
+    sel_probe.set("condition", "allvertices")
 
     # create PML
     pml1 = comp1.coordSystem().create("pml1", "PML")
@@ -308,7 +321,7 @@ def _prepare_model(model, parameters: ModelParameters):
     var_sc = comp1.probe().create("var_sc", "GlobalVariable")
     var_ext = comp1.probe().create("var_ext", "GlobalVariable")
     point_ot = comp1.probe().create("point_ot", "Point")
-    point_ot.selection().set(8)
+    point_ot.selection().named("sel_probe")
 
     var_sc.label("Scattering cross-section")
     var_sc.set("probename", "sigma_sc_norm")
@@ -351,7 +364,7 @@ def _prepare_model(model, parameters: ModelParameters):
 def create_new_model(client: mph.Client, parameters: ModelParameters) -> mph.Model:
     """Create a new model for calculating scattered field"""
     model = client.create(
-        f"comsol_helholtz_scattering({datetime.now().strftime('%Y-%m-%d_%H-%M-%S')})"
+        f"comsol_helholtz_pw_scattering({datetime.now().strftime('%Y-%m-%d_%H-%M-%S')})"
     )
     _prepare_model(model=model.java, parameters=parameters)
     return model

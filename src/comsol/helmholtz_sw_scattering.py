@@ -406,7 +406,7 @@ def _prepare_model(model, parameters: ModelParameters):
 def create_new_model(client: mph.Client, parameters: ModelParameters) -> mph.Model:
     """Create a new model for calculating scattered field"""
     model = client.create(
-        f"comsol_helholtz_scattering({datetime.now().strftime('%Y-%m-%d_%H-%M-%S')})"
+        f"comsol_helholtz_sw_scattering({datetime.now().strftime('%Y-%m-%d_%H-%M-%S')})"
     )
     _prepare_model(model=model.java, parameters=parameters)
     return model
