@@ -96,7 +96,7 @@ def _prepare_model(model, parameters: ModelParameters):
     pt1 = geom1.create("pt1", "Point")
     pt1.label("Probe")
     pt1.set("p", ["0", "R_PML-0.01"])
-    
+
     # build the geometry
     geom1.run()
     geom1.run("fin")

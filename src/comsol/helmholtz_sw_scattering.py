@@ -26,10 +26,8 @@ class ModelParameters:
     freq_step = str("5 [Hz]")
     freq_stop = str("2000 [Hz]")
     z0 = str("0.7[m]")
-    z1= str("0.7[m]+H_p")
+    z1 = str("0.7[m]+H_p")
     R_sp = str("0.05[m]")
-
-    
 
 
 def _prepare_model(model, parameters: ModelParameters):
@@ -59,7 +57,6 @@ def _prepare_model(model, parameters: ModelParameters):
     params.set("z0", parameters.z0)
     params.set("z1", parameters.z1)
     params.set("R_sp", parameters.R_sp)
-
 
     # create a component with geometry
     comp1 = model.component().create("comp1", True)
@@ -182,7 +179,9 @@ def _prepare_model(model, parameters: ModelParameters):
 
     sel_host_sample = comp1.selection().create("sel_host_sample", "Complement")
     sel_host_sample.label("Host near Sample")
-    sel_host_sample.set("input", ["sample_domain", "sel_host_with_PML", "speaker_domain"])
+    sel_host_sample.set(
+        "input", ["sample_domain", "sel_host_with_PML", "speaker_domain"]
+    )
 
     # Selection: point probe
     sel_probe = comp1.selection().create("sel_probe", "Disk")
@@ -191,7 +190,6 @@ def _prepare_model(model, parameters: ModelParameters):
     sel_probe.set("r", "0.005")
     sel_probe.set("posy", "R_PML-0.01")
     sel_probe.set("condition", "allvertices")
-
 
     # create PML
     pml1 = comp1.coordSystem().create("pml1", "PML")
@@ -379,7 +377,10 @@ def _prepare_model(model, parameters: ModelParameters):
     var_ext.set("window", "window1")
 
     point_ot.label("Optical theorem extinction")
-    point_ot.set("expr", "- 4*pi / acpr.k * imag(acpr.p_s / acpr.p_b) * (z*z0)/(z+z0) /(pi*R_p^2)")
+    point_ot.set(
+        "expr",
+        "- 4*pi / acpr.k * imag(acpr.p_s / acpr.p_b) * (z*z0)/(z+z0) /(pi*R_p^2)",
+    )
     point_ot.set("unit", "1")
     point_ot.set("descr", "Optical theorem")
     point_ot.set("window", "window1")
