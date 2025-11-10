@@ -26,8 +26,7 @@ class ModelParameters:
     freq_step = str("5 [Hz]")
     freq_stop = str("2000 [Hz]")
     z0 = str("0.7[m]")
-    z1 = str("0.7[m]+H_p")
-    R_sp = str("0.05[m]")
+    R_sp = str("0.01[m]")
 
 
 def _prepare_model(model, parameters: ModelParameters):
@@ -55,7 +54,6 @@ def _prepare_model(model, parameters: ModelParameters):
     params.set("freq_step", parameters.freq_step)
     params.set("freq_stop", parameters.freq_stop)
     params.set("z0", parameters.z0)
-    params.set("z1", parameters.z1)
     params.set("R_sp", parameters.R_sp)
 
     # create a component with geometry
@@ -102,7 +100,7 @@ def _prepare_model(model, parameters: ModelParameters):
     # create spherical speaker
     c4 = geom1.create("c4", "Circle")
     c4.label("Speaker")
-    c4.set("pos", ["0", "- z1"])
+    c4.set("pos", ["0", "- z0"])
     c4.set("r", "R_sp")
 
     # create point for probe
@@ -141,7 +139,7 @@ def _prepare_model(model, parameters: ModelParameters):
     speaker_domain = comp1.selection().create("speaker_domain", "Disk")
     speaker_domain.label("Speaker Domain")
     speaker_domain.set("r", "1.01*R_sp")
-    speaker_domain.set("posy", "- z1")
+    speaker_domain.set("posy", "- z0")
     speaker_domain.set("condition", "inside")
 
     speaker_boundary = comp1.selection().create("speaker_boundary", "Disk")
@@ -149,7 +147,7 @@ def _prepare_model(model, parameters: ModelParameters):
     speaker_boundary.label("Speaker Boundary")
     speaker_boundary.set("r", "1.01 * R_sp")
     speaker_boundary.set("rin", "0.99 * R_sp")
-    speaker_boundary.set("posy", "-z1")
+    speaker_boundary.set("posy", "-z0")
     speaker_boundary.set("condition", "allvertices")
 
     # Selection: Sample — Boundary + Domain
@@ -191,19 +189,29 @@ def _prepare_model(model, parameters: ModelParameters):
     sel_probe.set("posy", "R_PML-0.01")
     sel_probe.set("condition", "allvertices")
 
+    # Selection: line
+    sel_line = comp.selection().create("sel_line", "Box")
+    sel_line.set("entitydim", jpype.types.JInt(1))
+    sel_line.label("Line")
+    sel_line.set("xmin", "-0.01*R_p")
+    sel_line.set("xmax", "0.01*R_p")
+    sel_line.set("ymin", "-R_PML*0.01")
+    sel_line.set("ymax", "R_PML*1.01")
+    sel_line.set("condition", "inside")
+
     # create PML
     pml1 = comp1.coordSystem().create("pml1", "PML")
     pml1.selection().named(sel_PML.tag())
 
-    # Создание материала среды (host)
+    # create host material
     mat_host = comp1.material().create("mat_host", "Common")
     mat_host.selection().named("sel_host")
 
     prop = mat_host.propertyGroup("def")
 
-    # ---- Функции свойств ----
+    # ---- Functions for air material properties ----
 
-    # динамическая вязкость η(T)
+    # dynamic viscosity η(T)
     eta = prop.func().create("eta", "Piecewise")
     eta.set("arg", "T")
     eta.set(
@@ -220,7 +228,7 @@ def _prepare_model(model, parameters: ModelParameters):
     eta.set("argunit", "K")
     eta.set("fununit", "Pa*s")
 
-    # теплоёмкость Cp(T)
+    # heat capacity Cp(T)
     Cp = prop.func().create("Cp", "Piecewise")
     Cp.set("arg", "T")
     Cp.set(
@@ -237,7 +245,7 @@ def _prepare_model(model, parameters: ModelParameters):
     Cp.set("argunit", "K")
     Cp.set("fununit", "J/(kg*K)")
 
-    # теплопроводность k(T)
+    # thermal conductivity k(T)
     k = prop.func().create("k", "Piecewise")
     k.set("arg", "T")
     k.set(
@@ -254,14 +262,14 @@ def _prepare_model(model, parameters: ModelParameters):
     k.set("argunit", "K")
     k.set("fununit", "W/(m*K)")
 
-    # объёмная вязкость μB(T) = 0.6 η(T)
+    # bulk viscosity μB(T) = 0.6 η(T)
     muB = prop.func().create("muB", "Analytic")
     muB.set("expr", "0.6*eta(T)")
     muB.set("args", "T")
     muB.set("argunit", "K")
     muB.set("fununit", "Pa*s")
 
-    # ---- Назначение параметров материала ----
+    # ---- Apply functions for air material properties ----
     prop.set("density", "rho_host")
     prop.set("soundspeed", "c_host")
     prop.set("heatcapacity", "Cp(T)")
@@ -296,6 +304,18 @@ def _prepare_model(model, parameters: ModelParameters):
         "Scattering cross section",
     )
 
+    # Create variables for spherical wave
+    variables2 = comp1.variable().create("var2")
+    variables2.set("omega", "2*pi*freq")
+    variables2.set("k", "omega/c_host")
+    variables2.set("R0", "sqrt(r^2 + (z + z0)^2)")
+    variables2.set("p_b", "p0*z0/R0*exp(-i*k*R0)")
+    variables2.set("common", "- i*k - 1/R0")
+    variables2.set("dp_dr", "p_b*common*(r/R0)")
+    variables2.set("dp_dz", "p_b*common*(z + z0)/R0")
+    variables2.set("u_br", "dp_dr/(i*omega*rho_host)")
+    variables2.set("u_bz", "dp_dz/(i*omega*rho_host)")
+
     # ACPR
     acpr = comp1.physics().create("acpr", "PressureAcoustics", geom1.tag())
     acpr.selection().named("sel_host_with_PML")
@@ -306,16 +326,18 @@ def _prepare_model(model, parameters: ModelParameters):
     # create background pressure field
     bpf1 = acpr.create("bpf1", "BackgroundPressureField", jpype.types.JInt(2))
     bpf1.selection().named("sel_host_with_PML")
-    bpf1.set("PressureFieldType", "SphericalWave")
-    bpf1.set("pamp", "p0")
+    bpf1.set("p", "p_b")
+    bpf1.set("CalculateIntensity", True)
+    bpf1.set("v", [["u_br"], ["0"], ["u_bz"]])
+    bpf1.set("PressureFieldType", "UserDefined")
+    bpf1.set("PressureAmplitudeSpherical", "p0 * z0 /(1 [m])")
+    bpf1.set("z0", "- z0")
     bpf1.set("c", "c_host")
-    bpf1.set("PressureAmplitudeSpherical", "p0 * z0 [1/m]")
-    bpf1.set("z0", "- z1")
 
     # Spherical wave radiation
     swr1 = acpr.create("swr1", "SphericalWaveRadiation", jpype.types.JInt(1))
     swr1.selection().named(speaker_boundary.tag())
-    swr1.set("z0", "- z1")
+    swr1.set("z0", "- z0")
 
     # TA
     ta = comp1.physics().create("ta", "ThermoacousticsSinglePhysics", geom1.tag())
@@ -325,9 +347,9 @@ def _prepare_model(model, parameters: ModelParameters):
     # create background acoustic fields
     baf1 = ta.create("baf1", "BackgroundAcousticFields", jpype.types.JInt(2))
     baf1.selection().named("sel_host_sample")
-    baf1.set("pamp", "p0")
-    baf1.set("p", "p0*z0[1/m]")
-    baf1.set("AcousticFieldType", "PlaneWave")
+    baf1.set("AcousticFieldType", "UserDefined")
+    baf1.set("p", "p_b")
+    baf1.set("u", [["u_br"], ["0"], ["u_bz"]])
 
     # create multiphysics
     atb = comp1.multiphysics().create(

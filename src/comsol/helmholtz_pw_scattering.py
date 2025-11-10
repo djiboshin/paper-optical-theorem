@@ -154,6 +154,16 @@ def _prepare_model(model, parameters: ModelParameters):
     sel_probe.set("posy", "R_PML-0.01")
     sel_probe.set("condition", "allvertices")
 
+    # Selection: line
+    sel_line = comp.selection().create("sel_line", "Box")
+    sel_line.set("entitydim", jpype.types.JInt(1))
+    sel_line.label("Line")
+    sel_line.set("xmin", "-0.01*R_p")
+    sel_line.set("xmax", "0.01*R_p")
+    sel_line.set("ymin", "-R_PML*0.01")
+    sel_line.set("ymax", "R_PML*1.01")
+    sel_line.set("condition", "inside")
+
     # create PML
     pml1 = comp1.coordSystem().create("pml1", "PML")
     pml1.selection().named(sel_PML.tag())
@@ -321,19 +331,20 @@ def _prepare_model(model, parameters: ModelParameters):
     var_sc.set("probename", "sigma_sc_norm")
     var_sc.set("expr", "W_sc/I0/(pi*R_p^2)")
     var_sc.set("unit", "1")
-    var_sc.set("descr", "W_sc/I0/(pi*R_p^2)")
+    var_sc.set("descr", "Scattering cross-section")
     var_sc.set("window", "window1")
 
     var_ext.label("Extinction cross-section")
     var_ext.set("probename", "sigma_ext_norm")
     var_ext.set("expr", "W_ext/I0/(pi*R_p^2)")
     var_ext.set("unit", "1")
-    var_ext.set("descr", "W_ext/I0/(pi*R_p^2)")
+    var_ext.set("descr", "Extinction cross-section")
     var_ext.set("window", "window1")
 
+    point_ot.label("Optical theorem extinction")
     point_ot.set("expr", "- 4*pi / acpr.k * imag(acpr.p_s / acpr.p_b) * z /(pi*R_p^2)")
     point_ot.set("unit", "1")
-    point_ot.set("descr", "- 4*pi / acpr.k * imag(acpr.p_s / acpr.p_b) * z /(pi*R_p^2)")
+    point_ot.set("descr", "Optical theorem")
     point_ot.set("window", "window1")
 
     # create stydy
