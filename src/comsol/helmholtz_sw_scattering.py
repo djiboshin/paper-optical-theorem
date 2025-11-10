@@ -190,12 +190,12 @@ def _prepare_model(model, parameters: ModelParameters):
     sel_probe.set("condition", "allvertices")
 
     # Selection: line
-    sel_line = comp.selection().create("sel_line", "Box")
+    sel_line = comp1.selection().create("sel_line", "Box")
     sel_line.set("entitydim", jpype.types.JInt(1))
     sel_line.label("Line")
     sel_line.set("xmin", "-0.01*R_p")
     sel_line.set("xmax", "0.01*R_p")
-    sel_line.set("ymin", "-R_PML*0.01")
+    sel_line.set("ymin", "-d_down_p*0.01")
     sel_line.set("ymax", "R_PML*1.01")
     sel_line.set("condition", "inside")
 
