@@ -2,6 +2,7 @@ import mph
 import jpype
 from dataclasses import dataclass
 from datetime import datetime
+import numpy as np
 
 
 @dataclass(frozen=True)
@@ -192,11 +193,11 @@ def _prepare_model(model, parameters: ModelParameters):
     # Selection: line
     sel_line = comp1.selection().create("sel_line", "Box")
     sel_line.set("entitydim", jpype.types.JInt(1))
-    sel_line.label("Line")
+    sel_line.label("line")
     sel_line.set("xmin", "-0.01*R_p")
     sel_line.set("xmax", "0.01*R_p")
-    sel_line.set("ymin", "-d_down_p*0.01")
-    sel_line.set("ymax", "R_PML*1.01")
+    sel_line.set("ymin", "-0.01*d_down_p")
+    sel_line.set("ymax", "R_PML+ 0.01*d_down_p")
     sel_line.set("condition", "inside")
 
     # create PML
@@ -433,3 +434,38 @@ def create_new_model(client: mph.Client, parameters: ModelParameters) -> mph.Mod
     )
     _prepare_model(model=model.java, parameters=parameters)
     return model
+
+
+def get_results(model, sel_line="sel_line", data="dset1"):
+    """Extracts z, freq, and complex pressure fields (p_s, p_b) from a model along the specified line selection."""
+
+    # Create a temporary numerical evaluation object
+    num = model.java.result().numerical().create('eval_tmp', 'Eval')
+    num.selection().named(sel_line)
+    num.set('data', data)
+    num.set('expr', ['z', 'acpr.p_s', 'ta.p_s', 'acpr.p_b', 'ta.p_b'])
+
+    # Get real and imaginary parts of the results
+    results_real = np.array(num.getData())
+    results_imag = np.array(num.getImagData())
+
+    # Coordinate along the line
+    z = results_real[0]
+
+    # Build complex quantities
+    _acpr_p_s = results_real[1] + 1j * results_imag[1]
+    _ta_p_s   = results_real[2] + 1j * results_imag[2]
+    _acpr_p_b = results_real[3] + 1j * results_imag[3]
+    _ta_p_b   = results_real[4] + 1j * results_imag[4]
+
+    # Combine ACPR and TA fields (handle NaN values)
+    p_s = np.where(np.isnan(_acpr_p_s), _ta_p_s, _acpr_p_s)
+    p_b = np.where(np.isnan(_acpr_p_b), _ta_p_b, _acpr_p_b)
+
+    # Get frequency array from model parameters
+    freq = np.array(model.evaluate('freq'))
+
+    # Clean up the temporary numerical object
+    model.java.result().numerical().remove('eval_tmp')
+
+    return z, freq, p_s, p_b
