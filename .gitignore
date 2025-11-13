@@ -16,6 +16,7 @@ htmlcov
 
 # COMSOL files
 **/*.mph
+**/*.mph.lock
 
 # JRE logs
 **/*.log
