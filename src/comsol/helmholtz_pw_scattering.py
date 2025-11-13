@@ -2,6 +2,7 @@ import mph
 import jpype
 from dataclasses import dataclass
 from datetime import datetime
+import numpy as np
 
 
 @dataclass(frozen=True)
@@ -53,14 +54,14 @@ def _prepare_model(model, parameters: ModelParameters):
 
     # create circle for host
     c1 = geom1.create("c1", "Circle")
-    c1.label("host")
+    c1.label("Host")
     c1.set("layername", "Layer 1")
     c1.setIndex("layer", "L_PML", jpype.types.JInt(0))
     c1.set("r", "R_PML+L_PML")
 
     # create circle for particle
     c2 = geom1.create("c2", "Circle")
-    c2.label("particle_physics")
+    c2.label("Particle physics")
     c2.set("r", "1.3*sqrt(R_p^2 + H_p^2/4)")
     c2.set("pos", ["0", "-H_p/2"])
 
@@ -71,6 +72,7 @@ def _prepare_model(model, parameters: ModelParameters):
 
     # create polygon for particle shape
     pol1 = geom1.create("pol1", "Polygon")
+    pol1.label("Scatterer")
     pol1.set("source", "table")
     pol1.set(
         "table",
@@ -127,7 +129,7 @@ def _prepare_model(model, parameters: ModelParameters):
     sample_boundary.set("ymax", "H_p*0.01")
     sample_boundary.set("condition", "intersects")
 
-    sample_domain = comp1.selection().duplicate("sample_domain", "sample_boundary")
+    sample_domain = comp1.selection().duplicate("sample_domain", sample_boundary.tag())
     sample_domain.label("Sample Domain")
     sample_domain.set("entitydim", jpype.types.JInt(2))
     sample_domain.set("xmin", "-0.01*H_p")
@@ -144,7 +146,7 @@ def _prepare_model(model, parameters: ModelParameters):
 
     sel_host_sample = comp1.selection().create("sel_host_sample", "Complement")
     sel_host_sample.label("Host near Sample")
-    sel_host_sample.set("input", ["sample_domain", "sel_host_with_PML"])
+    sel_host_sample.set("input", [sample_domain.tag(), sel_host_with_PML.tag()])
 
     # Selection: point probe
     sel_probe = comp1.selection().create("sel_probe", "Disk")
@@ -170,7 +172,7 @@ def _prepare_model(model, parameters: ModelParameters):
 
     # create host material
     mat_host = comp1.material().create("mat_host", "Common")
-    mat_host.selection().named("sel_host")
+    mat_host.selection().named(sel_host.tag())
 
     prop = mat_host.propertyGroup("def")
 
@@ -271,25 +273,25 @@ def _prepare_model(model, parameters: ModelParameters):
 
     # ACPR
     acpr = comp1.physics().create("acpr", "PressureAcoustics", geom1.tag())
-    acpr.selection().named("sel_host_with_PML")
+    acpr.selection().named(sel_host_with_PML.tag())
     acpr.prop("cref").set("cref", "c_host")
 
     pml1.set("wavelengthSource", "acpr")
 
     # create background pressure field
     bpf1 = acpr.create("bpf1", "BackgroundPressureField")
-    bpf1.selection().named("sel_host_with_PML")
+    bpf1.selection().named(sel_host_with_PML.tag())
     bpf1.set("pamp", "p0")
     bpf1.set("c", "c_host")
 
     # TA
     ta = comp1.physics().create("ta", "ThermoacousticsSinglePhysics", geom1.tag())
-    ta.selection().named("sel_host_sample")
+    ta.selection().named(sel_host_sample.tag())
     ta.prop("cref").set("cref", "c_host")
 
     # create background acoustic fields
     baf1 = ta.create("baf1", "BackgroundAcousticFields", jpype.types.JInt(2))
-    baf1.selection().named("sel_host_sample")
+    baf1.selection().named(sel_host_sample.tag())
     baf1.set("pamp", "p0")
     baf1.set("p", "p0")
     baf1.set("AcousticFieldType", "PlaneWave")
@@ -307,15 +309,15 @@ def _prepare_model(model, parameters: ModelParameters):
     size.set("hmax", "mesh_h")
     size.set("hmin", "0.01*mesh_h")
     size1 = mesh1.create("size1", "Size")
-    size1.selection().named("sel_host_sample")
+    size1.selection().named(sel_host_sample.tag())
     size1.set("custom", "on")
     size1.set("hmax", "0.02*mesh_h")
     bl1 = mesh1.create("bl1", "BndLayer")
-    bl1.selection().named("sel_host_sample")
+    bl1.selection().named(sel_host_sample.tag())
     blp1 = bl1.create("blp1", "BndLayerProp")
-    blp1.selection().named("sample_boundary")
+    blp1.selection().named(sample_boundary.tag())
     ftri1 = mesh1.create("ftri1", "FreeTri")
-    ftri1.selection().named("sel_host_with_PML")
+    ftri1.selection().named(sel_host_with_PML.tag())
     size1.set("hminactive", True)
     size1.set("hmaxactive", True)
 
@@ -325,7 +327,7 @@ def _prepare_model(model, parameters: ModelParameters):
     var_sc = comp1.probe().create("var_sc", "GlobalVariable")
     var_ext = comp1.probe().create("var_ext", "GlobalVariable")
     point_ot = comp1.probe().create("point_ot", "Point")
-    point_ot.selection().named("sel_probe")
+    point_ot.selection().named(sel_probe.tag())
 
     var_sc.label("Scattering cross-section")
     var_sc.set("probename", "sigma_sc_norm")
@@ -365,7 +367,7 @@ def _prepare_model(model, parameters: ModelParameters):
     var_ext.set("table", "tbl2")
     point_ot.set("table", "tbl2")
 
-    
+
 def create_new_model(client: mph.Client, parameters: ModelParameters) -> mph.Model:
     """Create a new model for calculating scattered field"""
     model = client.create(
@@ -375,36 +377,38 @@ def create_new_model(client: mph.Client, parameters: ModelParameters) -> mph.Mod
     return model
 
 
-def get_results(model, sel_line="sel_line", data="dset1"):
+def get_results(
+    model, sel_line: str = "sel_line", data: str = "dset1"
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Extracts z, freq, and complex pressure fields (p_s, p_b) from a model along the specified line selection."""
 
     # Create a temporary numerical evaluation object
-    num = model.java.result().numerical().create('eval_tmp', 'Eval')
-    num.selection().named(sel_line)
-    num.set('data', data)
-    num.set('expr', ['z', 'acpr.p_s', 'ta.p_s', 'acpr.p_b', 'ta.p_b'])
+    eval = model.java.result().numerical().create("eval_tmp", "Eval")
+    eval.selection().named(sel_line)
+    eval.set("data", data)
+    eval.set("expr", ["z", "acpr.p_s", "ta.p_s", "acpr.p_b", "ta.p_b"])
 
     # Get real and imaginary parts of the results
-    results_real = np.array(num.getData())
-    results_imag = np.array(num.getImagData())
+    results_real = np.array(eval.getData())
+    results_imag = np.array(eval.getImagData())
 
     # Coordinate along the line
     z = results_real[0]
 
     # Build complex quantities
     _acpr_p_s = results_real[1] + 1j * results_imag[1]
-    _ta_p_s   = results_real[2] + 1j * results_imag[2]
+    _ta_p_s = results_real[2] + 1j * results_imag[2]
     _acpr_p_b = results_real[3] + 1j * results_imag[3]
-    _ta_p_b   = results_real[4] + 1j * results_imag[4]
+    _ta_p_b = results_real[4] + 1j * results_imag[4]
 
     # Combine ACPR and TA fields (handle NaN values)
     p_s = np.where(np.isnan(_acpr_p_s), _ta_p_s, _acpr_p_s)
     p_b = np.where(np.isnan(_acpr_p_b), _ta_p_b, _acpr_p_b)
 
     # Get frequency array from model parameters
-    freq = np.array(model.evaluate('freq'))
+    freq = np.array(model.evaluate("freq"))
 
     # Clean up the temporary numerical object
-    model.java.result().numerical().remove('eval_tmp')
+    model.java.result().numerical().remove("eval_tmp")
 
     return z, freq, p_s, p_b
