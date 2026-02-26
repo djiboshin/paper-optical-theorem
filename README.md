@@ -1,6 +1,6 @@
 # Measuring the Extinction Cross Section of Helmholtz Resonators via the Optical Theorem
 
-This repository contains the code accompanying the paper "Measuring the Extinction Cross Section of Helmholtz Resonators via the Optical Theorem."
+This repository contains the code accompanying the paper "Optical Theorem for Measuring the Acoustic Extinction Cross Section of Helmholtz Resonators."
 
 
 # Contents
