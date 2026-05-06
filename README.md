@@ -1,4 +1,4 @@
-# Measuring the Extinction Cross Section of Helmholtz Resonators via the Optical Theorem
+# Optical Theorem for Measuring the Acoustic Extinction Cross Section of Helmholtz Resonators
 
 This repository contains the code accompanying the paper "Optical Theorem for Measuring the Acoustic Extinction Cross Section of Helmholtz Resonators."
 
@@ -7,7 +7,7 @@ This repository contains the code accompanying the paper "Optical Theorem for Me
 
 This repository provides examples and code related to the paper, as well as additional demonstrations.
 The main workflows are organized as Jupyter notebooks:
-1. `1_prepation.ipynb`
+1. `1_preparation.ipynb`
     
     Contains tests and examples for Mie scattering calculations.
 
@@ -46,7 +46,7 @@ All data generated using COMSOL or obtained experimentally is stored in the `dat
 - `data/helmholtz_experiment`: contains experimental data for the scattering of a spherical wave on a Helmholtz resonator and model weights (used in `4_experiment.ipynb`);
 - `data/helmholtz_pw_comsol`: extinction and scattering cross-sections calculated for the scattering of a plane wave on a Helmholtz resonator, along with a `script.py` file for generating the data using COMSOL (used in `4_experiment.ipynb` and `3_data_processing.ipynb`);
 - `data/helmholtz_sw_comsol`: contains incident and scattered pressure fields calculated for the scattering of a spherical wave on a Helmholtz resonator, along with a `script.py` file for generating the data using COMSOL (used in `3_data_processing.ipynb`);
-- `data/sphere_comsol`: extinction and scattering cross-sections calculated for the scattering of a plane wave on a sphere, along with a `script.py` file for generating them using COMSOL (used in `1_prepation.ipynb`);
+- `data/sphere_comsol`: extinction and scattering cross-sections calculated for the scattering of a plane wave on a sphere, along with a `script.py` file for generating them using COMSOL (used in `1_preparation.ipynb`);
 - `data/sphere_theory`: contains model weights used for analytically calculated data processing (used in `3_data_processing.ipynb`).
 
 # Installation
